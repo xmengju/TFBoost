@@ -1,5 +1,5 @@
 Package: TFBoost
-Title: A Tree-based Boosting Algorithm for Functional Data
+Title: A Tree-based Boosting Algorithm for Functional Regression
 Version: 0.1
 Date: 2021-06-06
 Authors@R: 
