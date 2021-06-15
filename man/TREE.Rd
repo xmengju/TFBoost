@@ -4,7 +4,7 @@
 \alias{TREE}
 \title{Functional multi-index tree}
 \usage{
-TREE(x, y, z, newx, newy, newz, control = TREE.control())
+TREE(x, y, z, newx, newy, newz, random.seed, control = TREE.control())
 }
 \arguments{
 \item{x}{matrix of the functional predictor's basis projections in the training data (matrix/dataframe)}

@@ -78,7 +78,11 @@ TFBoost.control <- function(make_prediction = TRUE, tree_control = TREE.control(
 
 TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_val, x_test, z_test = NULL, y_test, grid, t_range, niter = 10, control = TFBoost.control()){
   
-  list2env(setNames(control,paste0(names(control))), envir = environment()) 
+  my.envir <- list2env(control)
+  control_names <- names(control)
+  for(g in  control_names) {
+    assign(g, get(g, envir=my.envir))
+  }
   
   if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
     oldseed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
@@ -124,6 +128,9 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
     init_tmp <- user_func
   }
 
+  func.grad <- init_tmp$func.grad
+  func <- init_tmp$func
+  
   f_train_t <- f_val_t <-  init_vals <- init.func(y_train)
 
   for(i in 1:niter){
@@ -139,7 +146,7 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
     }
 
     u <- as.numeric(cal.neggrad(y_train, f_train_t, func.grad))
-    tree.obj[[i]] <- TREE(x = train_predictors, y = u, z = z_train, newx = val_predictors, newz = z_val, control = tree_control)
+    tree.obj[[i]] <- TREE(x = train_predictors, y = u, z = z_train, newx = val_predictors, newz = z_val, random.seed = i, control = tree_control)
     h_train_t <-tree.obj[[i]]$pred_train
     h_val_t <- tree.obj[[i]]$pred_test
 
@@ -171,7 +178,7 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
                  err_val = err_val, grid = grid,  t_range = t_range, init_vals = init_vals,  tree.obj = tree.obj, alpha = alpha, control = control)
   
   if(make_prediction){
-    tmp_predict <- TREE.Boost.predict(model, newx = x_test, newy = y_test, newz = z_test)
+    tmp_predict <- TFBoost.predict(model, newx = x_test, newy = y_test, newz = z_test)
     model <- c(model, list(f_test_t = tmp_predict$pred, err_test = tmp_predict$err_test))
     if(save_f){
       model <- c(model, list(save_f_test = tmp_predict$save_f_test))
@@ -197,19 +204,27 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
 #'@return A list with with the following components:
 #'
 #' \item{f_t_test}{predicted values with model at the early stopping iteration using x_test (or x_test and z_test) as the predictors}
-#' \item{err_test}{a vector of test errors before and at the early stopping iteration (returned if make_prediction = TRUE in control)}
+#' \item{err_test}{a vector of test errors before and at the early stopping iteration (returned if newy is provided)}
 #' \item{save_f_test}{a matrix of test function estimates at all iterations (returned if save_f = TRUE in control)}
 #'
 #' @author Xiaomeng Ju, \email{xmengju@stat.ubc.ca}
 #' 
 #' @export
 
-TFBoost.predict <- function(model, newx, newy, newz){
-  
-  control <- model$control
-  list2env(setNames(model,paste0(names(model))), envir = environment()) 
-  list2env(setNames(control,paste0(names(control))), envir = environment()) 
+TFBoost.predict <- function(model, newx, newy, newz = NULL){
 
+  my.envir <- list2env(model$control)
+  control_names <- names(model$control)
+  for(g in  control_names) {
+    assign(g, get(g, envir=my.envir))
+  }
+  
+  my.envir <- list2env(model)
+  control_names <- names(model)
+  for(g in  control_names) {
+    assign(g, get(g, envir=my.envir))
+  }
+ 
   if(save_f){
     save_f_test <- matrix(NA, nrow(newx), early_stop)
   }
@@ -228,11 +243,17 @@ TFBoost.predict <- function(model, newx, newy, newz){
     }
   }
   
-  if(save_f){
-    return(list(save_f_test = save_f_test, pred = f_test_t, err_test = err_test))
-    
+  if( (missing(newy)) & (save_f == FALSE)){
+    return(f_test_t)
   }else{
-     return(list(pred = f_test_t, err_test = err_test))
+    res <- list(pred = f_test_t)
+    if(!missing(newy)){
+      res <- list(res,err_test = err_test)
+    }
+    if(save_f){
+      res <- list(res,  save_f_test =  save_f_test)
+    }
+    return(res)
   }
 }
 

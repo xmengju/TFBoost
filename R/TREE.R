@@ -20,7 +20,7 @@
 #' 
 #' @export
 #' 
-TREE.control <- function(make_prediction = TRUE, d = 1, minbucket = 2, tree_type = "a",  nmulti= 3, nscreen = 50, num_dir = 20, num_index = 1){
+TREE.control <- function(make_prediction = TRUE, d = 1, minbucket = 2, tree_type = "A",  nmulti= 3, nscreen = 50, num_dir = 20, num_index = 1){
   return(list(make_prediction = make_prediction, d = d, minbucket = minbucket, tree_type = tree_type, num_index = num_index, nmulti = nmulti, nscreen = nscreen,
               num_dir = num_dir))
 }
@@ -51,9 +51,13 @@ TREE.control <- function(make_prediction = TRUE, d = 1, minbucket = 2, tree_type
 #' 
 #' @export
 
-TREE <-function(x, y, z, newx, newy, newz, control = TREE.control()) {
+TREE <-function(x, y, z, newx, newy, newz, random.seed, control = TREE.control()) {
   
-  list2env(setNames(control,paste0(names(control))), envir = environment()) 
+  my.envir <- list2env(control)
+  control_names <- names(control)
+  for(g in  control_names) {
+    assign(g, get(g, envir=my.envir))
+  }
   
   if(exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
     oldseed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)

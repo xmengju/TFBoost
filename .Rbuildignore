@@ -1,2 +1,5 @@
+^README.Rmd
+^README_files
+^README.md
 ^TFBoost\.Rproj$
 ^\.Rproj\.user$

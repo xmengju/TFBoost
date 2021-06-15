@@ -4,7 +4,7 @@
 \alias{TFBoost.predict}
 \title{TFBoost.predict}
 \usage{
-TFBoost.predict(model, newx, newy, newz)
+TFBoost.predict(model, newx, newy, newz = NULL)
 }
 \arguments{
 \item{model}{an object returned by TFBoost}
@@ -19,7 +19,7 @@ TFBoost.predict(model, newx, newy, newz)
 A list with with the following components:
 
 \item{f_t_test}{predicted values with model at the early stopping iteration using x_test (or x_test and z_test) as the predictors}
-\item{err_test}{a vector of test errors before and at the early stopping iteration (returned if make_prediction = TRUE in control)}
+\item{err_test}{a vector of test errors before and at the early stopping iteration (returned if newy is provided)}
 \item{save_f_test}{a matrix of test function estimates at all iterations (returned if save_f = TRUE in control)}
 }
 \description{

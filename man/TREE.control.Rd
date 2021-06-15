@@ -8,7 +8,7 @@ TREE.control(
   make_prediction = TRUE,
   d = 1,
   minbucket = 2,
-  tree_type = "a",
+  tree_type = "A",
   nmulti = 3,
   nscreen = 50,
   num_dir = 20,

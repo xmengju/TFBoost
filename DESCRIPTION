@@ -8,7 +8,7 @@ Authors@R:
              )
 Description: An implementation of a tree-based boosting algorithm for functional regression in R. 
 License: GPL (>= 3)
-Imports: stats, rpart, lme4
+Imports: stats, rpart, lme4, splines
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

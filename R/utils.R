@@ -1,4 +1,4 @@
-#' @import rpart stats
+#' @import rpart stats lme4 splines
 mse <- function(a,b){
   return(mean((a-b)^2))
 }
