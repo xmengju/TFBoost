@@ -225,20 +225,20 @@ the returned object, which are needed for calculating predictions. The
 following code illustrates this procedure:
 
 ``` r
-model_TFBoost_seperate <- TFBoost(x_train = xtrain,  y_train = ytrain, 
+model_TFBoost_separate <- TFBoost(x_train = xtrain,  y_train = ytrain, 
                               x_val = xval,  y_val = yval, 
                               grid = gg, t_range  = tt, niter = niter, 
                               control = TFBoost.control(make_prediction = FALSE, 
                               tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_vec), num_dir = num_dir),
                               shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
-predictions <- TFBoost.predict(model_TFBoost_seperate, newx = xtest)
-model_TFBoost_seperate <- TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, 
+predictions <- TFBoost.predict(model_TFBoost_separate, newx = xtest)
+model_TFBoost_separate <- TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, 
                               x_val = xval, z_val = zval,  y_val = yval, 
                               grid = gg, t_range  = tt, niter = niter, 
                               control = TFBoost.control(make_prediction = FALSE, 
                               tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_day_vec),num_dir = num_dir),
                               shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
-predictions_day <- TFBoost.predict(model_TFBoost_seperate, newx = xtest, newz = ztest)
+predictions_day <- TFBoost.predict(model_TFBoost_separate, newx = xtest, newz = ztest)
 ```
 
 A sanity check
