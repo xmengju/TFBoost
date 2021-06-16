@@ -13,7 +13,7 @@ This repository contains `R` code implementing a tree-based boosting algorithm f
 
 You can install the development version of the package in R using:
 
-```{r initial, eval=FALSE, message=FALSE, warning=FALSE}
+```{r initial, eval=TRUE, message=FALSE, warning=FALSE}
 devtools::install_github("xmengju/TFBoost", auth_token = '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')
 ```
 

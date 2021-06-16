@@ -155,13 +155,14 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
      t_range <- c(min(grid), max(grid))
   }
   
-  if(!is.matrix(z_train)){
-    z_train = as.matrix(z_train, dimnames = list(NULL, names(z_train)))
+  if(!missing(z_train)){
+    if(!is.matrix(z_train)){
+      z_train = as.matrix(z_train, dimnames = list(NULL, names(z_train)))
+    }
+    if(!is.matrix(z_val)){
+      z_val = as.matrix(z_val, dimnames = list(NULL, names(z_val)))
+    }
   }
-  if(!is.matrix(z_val)){
-    z_val = as.matrix(z_val, dimnames = list(NULL, names(z_val)))
-  }
- 
   dd <- 4; p <- ncol(x_train)
   grid0 <- seq(t_range[1],t_range[2], 1/(10*(p-1))) # in case of not evenly spaced
   knot <- quantile(grid0, (1:nknot)/(nknot+1) )
