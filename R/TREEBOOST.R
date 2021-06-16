@@ -15,6 +15,7 @@
 #' @param nknot number of interior knots of the cubic B-spline basis (numeric, defaults to 3)
 #' @param save_f logical indicating whether to save the function estimates at all iterations (defaults to \code{FALSE})
 #' @param trace logical indicating whether to print the number of completed iterations for monitoring progress (defaults to \code{FALSE})
+#' @param save_tree logical indicating whether to save the tree objects at all iterations, required when the user calls \code{TFBoost.predict} with the returned object from \code{TFBoost} (defaults to \code{FALSE})
 #' @return A list of all input parameters
 #'
 #' @author Xiaomeng Ju, \email{xiaomeng.ju@stat.ubc.ca}
@@ -23,10 +24,10 @@
 #' 
 
 TFBoost.control <- function(make_prediction = TRUE, tree_control = TREE.control(), loss = "l2", user_func = NULL, shrinkage  = 0.05, precision = 4, 
-                               init_type = "mean", nknot = 3, save_f = FALSE, trace = FALSE){
+                               init_type = "mean", nknot = 3, save_f = FALSE, trace = FALSE, save_tree = FALSE){
   
   return(list(make_prediction =  make_prediction, tree_control = tree_control, loss = loss, user_func = user_func, shrinkage = shrinkage, precision = precision, 
-              init_type = init_type, nknot = nknot, save_f = save_f, trace = trace))
+              init_type = init_type, nknot = nknot, save_f = save_f, trace = trace, save_tree = save_tree))
 }
 
 #' Tree-based functional boosting 
@@ -73,7 +74,6 @@ TFBoost.control <- function(make_prediction = TRUE, tree_control = TREE.control(
 #' \item{save_f_test}{a matrix of test function estimates before and at the early stopping iteration (returned if save_f = TRUE and make_prediction = TRUE in control)}
 #'
 #' @author Xiaomeng Ju, \email{xiaomeng.ju@stat.ubc.ca}
-#' 
 #' @export
 
 TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_val, x_test, z_test = NULL, y_test, grid, t_range, niter = 10, control = TFBoost.control()){
@@ -99,7 +99,11 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
   
   if(missing(t_range)){
      t_range <- c(min(grid), max(grid))
-   }
+  }
+  
+#  if(!is.null(z_train) & is.matrix(z_train)){
+#     z_train <- data.frame(z_train)
+#  }
   
   dd <- 4; p <- ncol(x_train)
   grid0 <- seq(t_range[1],t_range[2], 1/(10*(p-1))) # in case of not evenly spaced
@@ -188,6 +192,9 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
   if(save_f){
     model <- c(model, list(save_f_train = save_f_train, save_f_val = save_f_val))
   }
+  if(!save_tree){
+    model$tree.obj <- NULL
+  }
   return(model)
 }
     
@@ -248,10 +255,10 @@ TFBoost.predict <- function(model, newx, newy, newz = NULL){
   }else{
     res <- list(pred = f_test_t)
     if(!missing(newy)){
-      res <- list(res,err_test = err_test)
+      res <- c(res, list(err_test = err_test))
     }
     if(save_f){
-      res <- list(res,  save_f_test =  save_f_test)
+      res <- c(res,  list(save_f_test =  save_f_test))
     }
     return(res)
   }

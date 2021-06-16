@@ -19,6 +19,8 @@ TREE(x, y, z, newx, newy, newz, random.seed, control = TREE.control())
 
 \item{newz}{matrix of the scalar predictors in the test data (matrix/dataframe, optional)}
 
+\item{random.seed}{a seed that controls the randomness of type B tree (numerical)}
+
 \item{control}{a named list of control parameters, as returned by \code{\link{TREE.control}}}
 }
 \value{

@@ -37,6 +37,7 @@ TREE.control <- function(make_prediction = TRUE, d = 1, minbucket = 2, tree_type
 #' @param newx  matrix of the functional predictor's basis projections in the test data (matrix/dataframe, optional)
 #' @param newz  matrix of the scalar predictors in the test data (matrix/dataframe, optional)
 #' @param newy response vector in the test data (matrix/dataframe, optional)
+#' @param random.seed a seed that controls the randomness of type B tree (numerical)
 #' @param control a named list of control parameters, as returned by \code{\link{TREE.control}}
 #' 
 #' @return A list with the following components:

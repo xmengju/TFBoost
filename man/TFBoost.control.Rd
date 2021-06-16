@@ -14,7 +14,8 @@ TFBoost.control(
   init_type = "mean",
   nknot = 3,
   save_f = FALSE,
-  trace = FALSE
+  trace = FALSE,
+  save_tree = FALSE
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ TFBoost.control(
 \item{save_f}{logical indicating whether to save the function estimates at all iterations (defaults to \code{FALSE})}
 
 \item{trace}{logical indicating whether to print the number of completed iterations for monitoring progress (defaults to \code{FALSE})}
+
+\item{save_tree}{logical indicating whether to save the tree objects at all iterations, required when the user calls \code{TFBoost.predict} with the returned object from \code{TFBoost} (defaults to \code{FALSE})}
 }
 \value{
 A list of all input parameters

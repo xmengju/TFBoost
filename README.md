@@ -21,7 +21,7 @@ Once installed you can load the package with:
 library(TFBoost)
 ```
 
-## Example: German electricity data
+## An example: German electricity data
 
 Below we illustrate the use of the package with the German electricity
 dataset. The original data is provided in the on-line supplementary
@@ -79,14 +79,40 @@ type B tree.
 
 We now explain how to fit a `TFBoost` estimator and compare it with the
 `fgam` estimator proposed in [McLean el
-al. (2014)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3982924/) and
+al. (2014)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3982924/) and
 implemented in the `refund` package. To specify the tree type, the user
 needs to set `tree_type = A` or `tree_type = B` in `tree_control`.
 Below, we will fit `TFBoost` with the type B tree, which trains much
 faster compared to the type A tree.
 
+The following are parameters required for our estimator
 
+``` r
+tree_type  = "B" # type of the base learner
+gg <- 1:24  # grid the data was evaluated on
+tt <- c(0,24) # range of the domain 
+niter <- 1000 # number of boosting iterations 
+make_prediction <- TRUE # make predictions 
+loss <-  "l2" # loss for the boosting algorithm ("l2" or "lad", if missing one can use a self-defined loss specified by user_func)
+shrinkage <- 0.04 # shrinkage parameter for boosting
+nknot <- 3 # number of interior knots for cubic B-spline basis
+```
 
 The depth of the base learners in `TFBoost` is set with the argument
-`max_depth`. The argument `niter` specifies the number of iterations to
-be used (we set `niter = 1000`).
+`d`. We considered `d` from 1 to 4, and chose the depth the minimizes
+the mean-squared-error on the `validation set`.
+
+``` r
+model_TFBoost_list <- list()
+val_error_vec <- rep(NA, 4)
+for(dd in 1:4){
+  model_TFBoost_list[[dd]] <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
+                           x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = 1000, 
+                           control = TFBoost.control(make_prediction = TRUE, tree_control = TREE.control(tree_type  = "B", d = dd), 
+                                                     shrinkage = 0.05, nknot = 3, loss = "l2"))
+  val_error_vec[dd] <-  model_TFBoost_list[[dd]]$err_val[model_TFBoost_list[[dd]]$early_stop]
+}
+model_TFBoost <-  model_TFBoost_list[[which.min(val_error_vec)]]
+```
+
+Then to adjust for the seaonality effects..
