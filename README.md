@@ -1,7 +1,7 @@
 TFBoost: a package for a tree-based functional boosting algorithm
 ================
 Xiaomeng Ju and Matias Salibian Barrera
-2021-06-15
+2021-06-16
 
 This repository contains `R` code implementing a tree-based boosting
 algorithm for scalar-on-function regression. The code provides a fit for
@@ -30,21 +30,28 @@ materials of [Liebl
 data consist of electricity spot prices traded at the European Energy
 Exchange (EEX) in Leipzig and electricity demand reported by European
 Network of Transmission System Operators for Electricity from January
-1st 2006 to September 30th 2008. We removed weekends and holidays from
+1st 2006 to September 30th 2008. We excluded weekends and holidays from
 the data and ended up with data collected on 638 days and provided it in
 the package as `GED`. We treated hourly evaluated electricity spot
 prices (`GED$price`) as the predictor, represented as a vector of
 dimension 24 for each day, and the daily average of electricity demand
 (`GED$demand`) as the response.
 
-We load the data and plot the first 10 predictor curves.
+We load the data, plot the first 10 predictor curves, and the demand in
+638 days.
 
 ``` r
 data(GED)
-matplot(t(GED$price[1:10,]), lty = 1, type = "l", ylab = "price", xlab = "hour")
+matplot(t(GED$price[1:10,]), lty = 1, type = "l", ylab = "price", xlab = "hour", main = "hourly electricity price (10 days)")
 ```
 
 ![](README_files/figure-gfm/plot-1.png)<!-- -->
+
+``` r
+plot(GED$date,GED$demand, type = "l", ylab = "demand", xlab = "date", main = "average daily electricity demand")
+```
+
+![](README_files/figure-gfm/plot-2.png)<!-- -->
 
 In order to train our predictor, we split the data set into a `training`
 set (with 60% of the available data), a `validation` set and a `test`
@@ -88,31 +95,162 @@ faster compared to the type A tree.
 The following are parameters required for our estimator
 
 ``` r
-tree_type  = "B" # type of the base learner
-gg <- 1:24  # grid the data was evaluated on
-tt <- c(0,24) # range of the domain 
+tree_type  <- "B" # type of the base learner
+num_dir <- 20  # number of random directions for type B tree
+gg <- 1:24  # specify the grid the functional predictor was evaluated on
+tt <- c(0,24) # domain of the functional predictor
 niter <- 1000 # number of boosting iterations 
-make_prediction <- TRUE # make predictions 
+make_prediction <- TRUE # make predictions based on test data
 loss <-  "l2" # loss for the boosting algorithm ("l2" or "lad", if missing one can use a self-defined loss specified by user_func)
-shrinkage <- 0.04 # shrinkage parameter for boosting
-nknot <- 3 # number of interior knots for cubic B-spline basis
+shrinkage <- 0.05 # shrinkage parameter for boosting
+nknot <- 3 # the number of interior knots for cubic B-spline basis
 ```
 
 The depth of the base learners in `TFBoost` is set with the argument
 `d`. We considered `d` from 1 to 4, and chose the depth the minimizes
-the mean-squared-error on the `validation set`.
+the mean-squared-error on the `validation set` at early stopping time.
+Below we train `TFBoost` and select the depth `d`. This step may take
+several minutes to run:
 
 ``` r
 model_TFBoost_list <- list()
 val_error_vec <- rep(NA, 4)
 for(dd in 1:4){
   model_TFBoost_list[[dd]] <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
-                           x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = 1000, 
-                           control = TFBoost.control(make_prediction = TRUE, tree_control = TREE.control(tree_type  = "B", d = dd), 
-                                                     shrinkage = 0.05, nknot = 3, loss = "l2"))
+                              x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = niter, 
+                              control = TFBoost.control(make_prediction = TRUE, 
+                              tree_control = TREE.control(tree_type  = tree_type, d = dd, num_dir = num_dir), 
+                              shrinkage = shrinkage, nknot = nknot, loss = loss))
   val_error_vec[dd] <-  model_TFBoost_list[[dd]]$err_val[model_TFBoost_list[[dd]]$early_stop]
 }
 model_TFBoost <-  model_TFBoost_list[[which.min(val_error_vec)]]
 ```
 
-Then to adjust for the seaonality effects..
+We fit `fgam` which estimates the regression function using
+tensor-product B-splines with roughness penalties. We set the marginal
+basis to be cubic B-splines of dimension 15 and used REML to select the
+parameter that penalizes the second order marginal differences.
+
+``` r
+library(refund)
+nbasis_FGAM <- 15
+xx <- xtrain
+yy <- ytrain
+model_FGAM <- fgam(yy ~ af(xx, splinepars=list(k=c(nbasis_FGAM,nbasis_FGAM),m=list(c(2,2),c(2,2)))), method ="REML")
+```
+
+For `TFBoost`, the prediction at early stopping time using `x_test` as
+the predictor is stored in the `f_test_t` entry of the returned objects.
+The returned `err_test` stored a vector of mean-squared-errors on the
+test set before and at the early stopping iteration. A sanity check:
+
+``` r
+mse_TFBoost.1 <- mean((model_TFBoost$f_test_t - ytest)^2)
+mse_TFBoost.2 <- model_TFBoost$err_test[model_TFBoost$early_stop]
+all.equal(mse_TFBoost.1, mse_TFBoost.2)
+```
+
+    ## [1] TRUE
+
+We compare the test errors of `TFBoost` and `fgam` and note that
+`TFBoost` yields better predictions on the test set:
+
+``` r
+mse_FGAM <-  mean((predict(model_FGAM,newdata=list(xx =xtest),type='response')- ytest)^2)
+print(c(mse_TFBoost.1,mse_FGAM))
+```
+
+    ## [1] 3524225 5026891
+
+We observe that electricity demand shows a seasonality pattern likely
+due to higher usage in summer for cooling and in winter for heating. To
+adjust for the seasonal effects, we considered adding a
+`day_of_the_year` variable as a scalar predictor, which is defined as
+the number of days from January 1st of the year in which the data was
+collected.
+
+We compute the `day_of_the_year` variable and construct its values for
+the training, validation, and test sets.
+
+``` r
+Year <- substr(GED$date,1,4)
+day_of_the_year <- as.numeric(GED$date- as.Date(paste0("01.01.", Year), "%d.%m.%Y"))
+ztrain <- matrix(day_of_the_year[idx_train], dimnames = list(NULL, "z"))
+zval <-  matrix(day_of_the_year[idx_val],dimnames = list(NULL, "z"))
+ztest <-  matrix(day_of_the_year[idx_test],dimnames = list(NULL, "z"))
+```
+
+Below we train `TFBoost` and `fgam` with `price` and `day_of_the_year`
+as predictors:
+
+``` r
+model_TFBoost_day_list <- list()
+val_error_day_vec <- rep(NA, 4)
+for(dd in 1:4){
+  model_TFBoost_day_list[[dd]] <- TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, 
+                              x_val = xval, z_val = zval,  y_val = yval, 
+                              x_test = xtest, z_test = ztest, y_test = ytest, 
+                              grid = gg, t_range  = tt, niter = niter, 
+                              control = TFBoost.control(make_prediction = TRUE, 
+                              tree_control = TREE.control(tree_type  = tree_type, d = dd,num_dir = num_dir), 
+                              shrinkage = shrinkage, nknot = nknot, loss = loss))
+  val_error_day_vec[dd] <-  model_TFBoost_day_list[[dd]]$err_val[model_TFBoost_day_list[[dd]]$early_stop]
+}
+model_TFBoost_day <-  model_TFBoost_day_list[[which.min(val_error_day_vec)]]
+
+zz <- ztrain
+model_FGAM_day <- fgam(yy ~ af(xx, splinepars=list(k=c(nbasis_FGAM,nbasis_FGAM),m=list(c(2,2),c(2,2))))+ s(zz, bs = "cs"), method = "REML")
+```
+
+We compare their test errors:
+
+``` r
+mse_TFBoost_day <-mean( (model_TFBoost_day$f_test_t- ytest)^2)
+mse_FGAM_day <-  mean((predict(model_FGAM_day,newdata=list(xx =xtest, zz = ztest),type='response')- ytest)^2)
+print(c(mse_TFBoost_day,mse_FGAM_day))
+```
+
+    ## [1] 2872263 4209165
+
+We note that the predictive performance of `TFBoost` and `fgam` both
+improved comapred to only using `price` as the predictor, and `TFBoost`
+yields better test errors.
+
+For `TFBoost`, we can also separate the process of training the
+predictor and evaluating it on a test set. In this way we have the
+flexibility to compute predictions on multiple test sets when needed. In
+this case the user needs to use `save_tree = TRUE` in the argument
+`control`. This option includes the tree objects at all iterations in
+the returned object, which are needed for calculating predictions. The
+following code illustrates this procedure:
+
+``` r
+model_TFBoost_seperate <- TFBoost(x_train = xtrain,  y_train = ytrain, 
+                              x_val = xval,  y_val = yval, 
+                              grid = gg, t_range  = tt, niter = niter, 
+                              control = TFBoost.control(make_prediction = FALSE, 
+                              tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_vec), num_dir = num_dir),
+                              shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
+predictions <- TFBoost.predict(model_TFBoost_seperate, newx = xtest)
+model_TFBoost_seperate <- TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, 
+                              x_val = xval, z_val = zval,  y_val = yval, 
+                              grid = gg, t_range  = tt, niter = niter, 
+                              control = TFBoost.control(make_prediction = FALSE, 
+                              tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_day_vec),num_dir = num_dir),
+                              shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
+predictions_day <- TFBoost.predict(model_TFBoost_seperate, newx = xtest, newz = ztest)
+```
+
+A sanity check
+
+``` r
+all.equal(mean( (predictions - ytest)^2), mse_TFBoost.1)
+```
+
+    ## [1] TRUE
+
+``` r
+all.equal(mean( (predictions_day - ytest)^2), mse_TFBoost_day)
+```
+
+    ## [1] TRUE

@@ -13,7 +13,7 @@ This repository contains `R` code implementing a tree-based boosting algorithm f
 
 You can install the development version of the package in R using:
 
-```{r initial, eval=TRUE, message=FALSE, warning=FALSE}
+```{r initial, eval=FALSE, message=FALSE, warning=FALSE}
 devtools::install_github("xmengju/TFBoost", auth_token = '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')
 ```
 
@@ -23,13 +23,12 @@ library(TFBoost)
 ```
 
 ## An example: German electricity data
-Below we illustrate the use of the package with the German electricity dataset. The original data is provided in the on-line supplementary materials of [Liebl (2013)](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Modeling-and-forecasting-electricity-spot-prices--A-functional-data/10.1214/13-AOAS652.full).The data consist of electricity spot prices traded at the European Energy Exchange (EEX) in Leipzig and electricity demand reported by European Network of Transmission System Operators for Electricity from January 1st 2006 to  September 30th 2008.  We removed weekends and holidays from the data and ended up with data collected on 638 days and provided it in the package as `GED`. We treated hourly evaluated electricity spot prices (`GED$price`) as the predictor,  represented as a vector of dimension 24 for each day, and the daily average of electricity demand (`GED$demand`) as the response.  
+Below we illustrate the use of the package with the German electricity dataset. The original data is provided in the on-line supplementary materials of [Liebl (2013)](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Modeling-and-forecasting-electricity-spot-prices--A-functional-data/10.1214/13-AOAS652.full).The data consist of electricity spot prices traded at the European Energy Exchange (EEX) in Leipzig and electricity demand reported by European Network of Transmission System Operators for Electricity from January 1st 2006 to  September 30th 2008.  We excluded weekends and holidays from the data and ended up with data collected on 638 days and provided it in the package as `GED`. We treated hourly evaluated electricity spot prices (`GED$price`) as the predictor,  represented as a vector of dimension 24 for each day, and the daily average of electricity demand (`GED$demand`) as the response.  
 
 We load the data, plot the first 10 predictor curves, and the demand in 638 days. 
 
 ```{r plot}
 data(GED)
-par(mfrow = c(1,2))
 matplot(t(GED$price[1:10,]), lty = 1, type = "l", ylab = "price", xlab = "hour", main = "hourly electricity price (10 days)")
 plot(GED$date,GED$demand, type = "l", ylab = "demand", xlab = "date", main = "average daily electricity demand")
 ```
@@ -83,12 +82,11 @@ The depth of the base learners in `TFBoost` is set with the argument `d`. We con
 model_TFBoost_list <- list()
 val_error_vec <- rep(NA, 4)
 for(dd in 1:4){
-  print(paste("max depth = ", dd))
   model_TFBoost_list[[dd]] <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
                               x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = niter, 
                               control = TFBoost.control(make_prediction = TRUE, 
                               tree_control = TREE.control(tree_type  = tree_type, d = dd, num_dir = num_dir), 
-                              shrinkage = shrinkage, nknot = nknot, loss = loss, trace = TRUE))
+                              shrinkage = shrinkage, nknot = nknot, loss = loss))
   val_error_vec[dd] <-  model_TFBoost_list[[dd]]$err_val[model_TFBoost_list[[dd]]$early_stop]
 }
 model_TFBoost <-  model_TFBoost_list[[which.min(val_error_vec)]]
@@ -170,14 +168,14 @@ predictions. The following code illustrates this procedure:
 model_TFBoost_seperate <- TFBoost(x_train = xtrain,  y_train = ytrain, 
                               x_val = xval,  y_val = yval, 
                               grid = gg, t_range  = tt, niter = niter, 
-                              control = TFBoost.control(make_prediction = TRUE, 
+                              control = TFBoost.control(make_prediction = FALSE, 
                               tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_vec), num_dir = num_dir),
                               shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
 predictions <- TFBoost.predict(model_TFBoost_seperate, newx = xtest)
 model_TFBoost_seperate <- TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, 
                               x_val = xval, z_val = zval,  y_val = yval, 
                               grid = gg, t_range  = tt, niter = niter, 
-                              control = TFBoost.control(make_prediction = TRUE, 
+                              control = TFBoost.control(make_prediction = FALSE, 
                               tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_day_vec),num_dir = num_dir),
                               shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
 predictions_day <- TFBoost.predict(model_TFBoost_seperate, newx = xtest, newz = ztest)

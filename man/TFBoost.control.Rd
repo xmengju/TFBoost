@@ -53,4 +53,31 @@ function
 }
 \author{
 Xiaomeng Ju, \email{xiaomeng.ju@stat.ubc.ca}
+
+#' @examples
+\dontrun{
+data(GED)
+n <- nrow(GED$price) 
+n0 <- floor( 0.2 * n) 
+set.seed(123)
+idx_test <- sample(n, n0)
+idx_train <- sample((1:n)[-idx_test], floor( 0.6 * n ) )
+idx_val <- (1:n)[ -c(idx_test, idx_train) ] 
+xtrain <- GED$price[idx_train, ]
+ytrain <- GED$demand[idx_train ]
+xval <- GED$price[idx_val, ]
+yval <- GED$demand[idx_val ]
+xtest <- GED$price[idx_test, ]
+ytest <- GED$demand[idx_test ]
+gg <- 1:24  
+tt <- c(0,24) 
+niter <- 1000
+my.control <- TFBoost.control(make_prediction = TRUE, 
+tree_control = TREE.control(tree_type  = "B", d = 1, num_dir = 200), 
+shrinkage = 0.05, nknot = 3, loss = "l2")
+
+model_TFBoost <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
+       x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = niter, 
+       control = my.control)
+}
 }

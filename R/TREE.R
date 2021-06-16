@@ -183,6 +183,9 @@ TREE.predict <- function(model, newx, newz){
       if(is.null(newz)){
         index <- as.matrix(newx %*% model$beta_opt)
       }else{
+        if(!is.matrix(newz)){
+          newz = as.matrix(newz, dimnames = list(NULL, names(newz)))
+        }
         index <- cbind(as.matrix(newx %*% model$beta_opt), newz)
         colnames(index)[1:ncol(model$beta_opt)] <- c(paste("X", 1:ncol(model$beta_opt), sep = ""))
       }
@@ -194,6 +197,9 @@ TREE.predict <- function(model, newx, newz){
       if(is.null(newz)){
         index <- newx %*% as.matrix(betas)
       }else{
+        if(!is.matrix(newz)){
+          newz = as.matrix(newz, dimnames = list(NULL, names(newz)))
+        }
         index <- cbind(newx %*% as.matrix(betas), newz)
         colnames(index)[1:model$control$num_dir] <- c(paste("X", 1:model$control$num_dir, sep = ""))
       }

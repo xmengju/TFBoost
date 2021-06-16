@@ -20,6 +20,32 @@
 #'
 #' @author Xiaomeng Ju, \email{xiaomeng.ju@stat.ubc.ca}
 #' 
+#' #' @examples
+#'  \dontrun{
+#' data(GED)
+#' n <- nrow(GED$price) 
+#' n0 <- floor( 0.2 * n) 
+#' set.seed(123)
+#' idx_test <- sample(n, n0)
+#' idx_train <- sample((1:n)[-idx_test], floor( 0.6 * n ) )
+#' idx_val <- (1:n)[ -c(idx_test, idx_train) ] 
+#' xtrain <- GED$price[idx_train, ]
+#' ytrain <- GED$demand[idx_train ]
+#' xval <- GED$price[idx_val, ]
+#' yval <- GED$demand[idx_val ]
+#' xtest <- GED$price[idx_test, ]
+#' ytest <- GED$demand[idx_test ]
+#' gg <- 1:24  
+#' tt <- c(0,24) 
+#' niter <- 1000
+#' my.control <- TFBoost.control(make_prediction = TRUE, 
+#' tree_control = TREE.control(tree_type  = "B", d = 1, num_dir = 200), 
+#' shrinkage = 0.05, nknot = 3, loss = "l2")
+#'
+#' model_TFBoost <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
+#'        x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = niter, 
+#'        control = my.control)
+#'}        
 #' @export
 #' 
 
@@ -74,6 +100,34 @@ TFBoost.control <- function(make_prediction = TRUE, tree_control = TREE.control(
 #' \item{save_f_test}{a matrix of test function estimates before and at the early stopping iteration (returned if save_f = TRUE and make_prediction = TRUE in control)}
 #'
 #' @author Xiaomeng Ju, \email{xiaomeng.ju@stat.ubc.ca}
+#' 
+#' @examples
+#' 
+#'  \dontrun{
+#' data(GED)
+#' n <- nrow(GED$price) 
+#' n0 <- floor( 0.2 * n) 
+#' set.seed(123)
+#' idx_test <- sample(n, n0)
+#' idx_train <- sample((1:n)[-idx_test], floor( 0.6 * n ) )
+#' idx_val <- (1:n)[ -c(idx_test, idx_train) ] 
+#' xtrain <- GED$price[idx_train, ]
+#' ytrain <- GED$demand[idx_train ]
+#' xval <- GED$price[idx_val, ]
+#' yval <- GED$demand[idx_val ]
+#' xtest <- GED$price[idx_test, ]
+#' ytest <- GED$demand[idx_test ]
+#' gg <- 1:24  
+#' tt <- c(0,24) 
+#' niter <- 1000
+#' my.control <- TFBoost.control(make_prediction = TRUE, 
+#' tree_control = TREE.control(tree_type  = "B", d = 1, num_dir = 200), 
+#' shrinkage = 0.05, nknot = 3, loss = "l2")
+#'
+#' model_TFBoost <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
+#'        x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = niter, 
+#'        control = my.control)
+#' }    
 #' @export
 
 TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_val, x_test, z_test = NULL, y_test, grid, t_range, niter = 10, control = TFBoost.control()){
@@ -101,10 +155,13 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
      t_range <- c(min(grid), max(grid))
   }
   
-#  if(!is.null(z_train) & is.matrix(z_train)){
-#     z_train <- data.frame(z_train)
-#  }
-  
+  if(!is.matrix(z_train)){
+    z_train = as.matrix(z_train, dimnames = list(NULL, names(z_train)))
+  }
+  if(!is.matrix(z_val)){
+    z_val = as.matrix(z_val, dimnames = list(NULL, names(z_val)))
+  }
+ 
   dd <- 4; p <- ncol(x_train)
   grid0 <- seq(t_range[1],t_range[2], 1/(10*(p-1))) # in case of not evenly spaced
   knot <- quantile(grid0, (1:nknot)/(nknot+1) )
@@ -216,7 +273,36 @@ TFBoost <- function(x_train, z_train = NULL, y_train,  x_val,  z_val = NULL, y_v
 #'
 #' @author Xiaomeng Ju, \email{xmengju@stat.ubc.ca}
 #' 
+#' #' #' @examples
+#'  \dontrun{
+#' data(GED)
+#' n <- nrow(GED$price) 
+#' n0 <- floor( 0.2 * n) 
+#' set.seed(123)
+#' idx_test <- sample(n, n0)
+#' idx_train <- sample((1:n)[-idx_test], floor( 0.6 * n ) )
+#' idx_val <- (1:n)[ -c(idx_test, idx_train) ] 
+#' xtrain <- GED$price[idx_train, ]
+#' ytrain <- GED$demand[idx_train ]
+#' xval <- GED$price[idx_val, ]
+#' yval <- GED$demand[idx_val ]
+#' xtest <- GED$price[idx_test, ]
+#' ytest <- GED$demand[idx_test ]
+#' gg <- 1:24  
+#' tt <- c(0,24) 
+#' niter <- 1000
+#' my.control <- TFBoost.control(make_prediction = TRUE, save_tree = TRUE,
+#'                               tree_control = TREE.control(tree_type  = "B", d = 1, num_dir = 200), 
+#'                              shrinkage = 0.05, nknot = 3, loss = "l2")
+#' model_TFBoost <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
+#'                          grid = gg, t_range  = tt, niter = niter, 
+#'                          control = my.control)
+
+#' predictions<- TFBoost.predict(model_TFBoost, newx = xtest)
+
+#'} 
 #' @export
+#' 
 
 TFBoost.predict <- function(model, newx, newy, newz = NULL){
 
