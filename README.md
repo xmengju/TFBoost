@@ -1,7 +1,7 @@
 TFBoost: a package for a tree-based functional boosting algorithm
 ================
 Xiaomeng Ju and Matias Salibian Barrera
-2021-06-16
+2021-06-17
 
 This repository contains `R` code implementing a tree-based boosting
 algorithm for scalar-on-function regression. The code provides a fit for
@@ -42,13 +42,15 @@ We load the data, plot the first 10 predictor curves, and the demand in
 
 ``` r
 data(GED)
-matplot(t(GED$price[1:10,]), lty = 1, type = "l", ylab = "price", xlab = "hour", main = "hourly electricity price (10 days)")
+matplot(t(GED$price[1:10,]), lty = 1, type = "l", ylab = "price", xlab = "hour", 
+        main = "hourly electricity price (10 days)")
 ```
 
 ![](README_files/figure-gfm/plot-1.png)<!-- -->
 
 ``` r
-plot(GED$date,GED$demand, type = "l", ylab = "demand", xlab = "date", main = "average daily electricity demand")
+plot(GED$date,GED$demand, type = "l", ylab = "demand", xlab = "date", 
+     main = "average daily electricity demand")
 ```
 
 ![](README_files/figure-gfm/plot-2.png)<!-- -->
@@ -101,7 +103,7 @@ gg <- 1:24  # specify the grid the functional predictor was evaluated on
 tt <- c(0,24) # domain of the functional predictor
 niter <- 1000 # number of boosting iterations 
 make_prediction <- TRUE # make predictions based on test data
-loss <-  "l2" # loss for the boosting algorithm ("l2" or "lad", if missing one can use a self-defined loss specified by user_func)
+loss <-  "l2" # loss for the boosting algorithm ("l2", "lad", or one specified by user_func)
 shrinkage <- 0.05 # shrinkage parameter for boosting
 nknot <- 3 # the number of interior knots for cubic B-spline basis
 ```
@@ -113,15 +115,20 @@ Below we train `TFBoost` and select the depth `d`. This step may take
 several minutes to run:
 
 ``` r
-model_TFBoost_list <- list()
-val_error_vec <- rep(NA, 4)
-for(dd in 1:4){
-  model_TFBoost_list[[dd]] <- TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval, 
-                              x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = niter, 
-                              control = TFBoost.control(make_prediction = TRUE, 
-                              tree_control = TREE.control(tree_type  = tree_type, d = dd, num_dir = num_dir), 
-                              shrinkage = shrinkage, nknot = nknot, loss = loss))
-  val_error_vec[dd] <-  model_TFBoost_list[[dd]]$err_val[model_TFBoost_list[[dd]]$early_stop]
+tree.depths <- 1:4
+model_TFBoost_list <- vector('list', length(tree.depths))
+val_error_vec <- rep(NA, length(tree.depths))
+for(dd in 1:length(tree.depths)) {
+  model_TFBoost_list[[dd]] <- 
+    TFBoost(x_train = xtrain, y_train = ytrain,  x_val = xval,  y_val = yval,
+            x_test = xtest, y_test = ytest, grid = gg, t_range  = tt, niter = niter,
+            control = TFBoost.control(make_prediction = TRUE, tree_control =
+                                        TREE.control(tree_type  = tree_type, 
+                                                     d = tree.depths[dd], 
+                                                     num_dir = num_dir), 
+                                      shrinkage = shrinkage, nknot = nknot, loss = loss))
+  val_error_vec[dd] <-  
+    model_TFBoost_list[[dd]]$err_val[model_TFBoost_list[[dd]]$early_stop]
 }
 model_TFBoost <-  model_TFBoost_list[[which.min(val_error_vec)]]
 ```
@@ -136,7 +143,9 @@ library(refund)
 nbasis_FGAM <- 15
 xx <- xtrain
 yy <- ytrain
-model_FGAM <- fgam(yy ~ af(xx, splinepars=list(k=c(nbasis_FGAM,nbasis_FGAM),m=list(c(2,2),c(2,2)))), method ="REML")
+model_FGAM <- fgam(yy ~ af(xx, splinepars = list(k=c(nbasis_FGAM,nbasis_FGAM), 
+                                                 m = list(c(2,2),c(2,2)))), 
+                   method ="REML")
 ```
 
 For `TFBoost`, the prediction at early stopping time using `x_test` as
@@ -184,29 +193,37 @@ Below we train `TFBoost` and `fgam` with `price` and `day_of_the_year`
 as predictors:
 
 ``` r
-model_TFBoost_day_list <- list()
-val_error_day_vec <- rep(NA, 4)
-for(dd in 1:4){
-  model_TFBoost_day_list[[dd]] <- TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, 
-                              x_val = xval, z_val = zval,  y_val = yval, 
-                              x_test = xtest, z_test = ztest, y_test = ytest, 
-                              grid = gg, t_range  = tt, niter = niter, 
-                              control = TFBoost.control(make_prediction = TRUE, 
-                              tree_control = TREE.control(tree_type  = tree_type, d = dd,num_dir = num_dir), 
-                              shrinkage = shrinkage, nknot = nknot, loss = loss))
-  val_error_day_vec[dd] <-  model_TFBoost_day_list[[dd]]$err_val[model_TFBoost_day_list[[dd]]$early_stop]
+tree.depths <- 1:4
+model_TFBoost_day_list <- vector('list', length(tree.depths))
+val_error_day_vec <- rep(NA, length(tree.depths))
+for(dd in 1:length(tree.depths)){
+  model_TFBoost_day_list[[dd]] <- 
+    TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, x_val = xval, 
+            z_val = zval,  y_val = yval, x_test = xtest, z_test = ztest, y_test = ytest,
+            grid = gg, t_range  = tt, niter = niter, 
+            control = TFBoost.control(make_prediction = TRUE, 
+                                      tree_control = TREE.control(tree_type  = tree_type, 
+                                                                  d = tree.depths[dd],
+                                                                  num_dir = num_dir), 
+                                      shrinkage = shrinkage, nknot = nknot, loss = loss))
+  val_error_day_vec[dd] <-
+    model_TFBoost_day_list[[dd]]$err_val[model_TFBoost_day_list[[dd]]$early_stop]
 }
 model_TFBoost_day <-  model_TFBoost_day_list[[which.min(val_error_day_vec)]]
 
 zz <- ztrain
-model_FGAM_day <- fgam(yy ~ af(xx, splinepars=list(k=c(nbasis_FGAM,nbasis_FGAM),m=list(c(2,2),c(2,2))))+ s(zz, bs = "cs"), method = "REML")
+model_FGAM_day <- fgam(yy ~ af(xx, splinepars = list(k=c(nbasis_FGAM,nbasis_FGAM),
+                                                     m = list(c(2,2),c(2,2)))) + 
+                         s(zz, bs = "cs"), method = "REML")
 ```
 
 We compare their test errors:
 
 ``` r
-mse_TFBoost_day <-mean( (model_TFBoost_day$f_test_t- ytest)^2)
-mse_FGAM_day <-  mean((predict(model_FGAM_day,newdata=list(xx =xtest, zz = ztest),type='response')- ytest)^2)
+mse_TFBoost_day <-mean( (model_TFBoost_day$f_test_t- ytest)^2 )
+mse_FGAM_day <-  mean( (predict(model_FGAM_day,
+                               newdata=list(xx =xtest, zz = ztest),
+                               type='response') - ytest)^2 )
 print(c(mse_TFBoost_day,mse_FGAM_day))
 ```
 
@@ -226,18 +243,30 @@ following code illustrates this procedure:
 
 ``` r
 model_TFBoost_separate <- TFBoost(x_train = xtrain,  y_train = ytrain, 
-                              x_val = xval,  y_val = yval, 
-                              grid = gg, t_range  = tt, niter = niter, 
-                              control = TFBoost.control(make_prediction = FALSE, 
-                              tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_vec), num_dir = num_dir),
-                              shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
+                                  x_val = xval,  y_val = yval, 
+                                  grid = gg, t_range  = tt, niter = niter, 
+                                  control = 
+                                    TFBoost.control(make_prediction = FALSE,
+                                                    tree_control = TREE.control(
+                                                      tree_type  = tree_type, 
+                                                      d = which.min(val_error_vec), 
+                                                      num_dir = num_dir),
+                                                    shrinkage = shrinkage, 
+                                                    nknot = nknot, loss = loss, 
+                                                    save_tree = TRUE))
 predictions <- TFBoost.predict(model_TFBoost_separate, newx = xtest)
 model_TFBoost_separate <- TFBoost(x_train = xtrain, z_train = ztrain, y_train = ytrain, 
-                              x_val = xval, z_val = zval,  y_val = yval, 
-                              grid = gg, t_range  = tt, niter = niter, 
-                              control = TFBoost.control(make_prediction = FALSE, 
-                              tree_control = TREE.control(tree_type  = tree_type, d = which.min(val_error_day_vec),num_dir = num_dir),
-                              shrinkage = shrinkage, nknot = nknot, loss = loss, save_tree = TRUE))
+                                  x_val = xval, z_val = zval,  y_val = yval, 
+                                  grid = gg, t_range  = tt, niter = niter, 
+                                  control = 
+                                    TFBoost.control(make_prediction = FALSE, 
+                                                    tree_control = TREE.control(
+                                                      tree_type  = tree_type, 
+                                                      d = which.min(val_error_day_vec),
+                                                      num_dir = num_dir),
+                                                    shrinkage = shrinkage, 
+                                                    nknot = nknot, loss = loss, 
+                                                    save_tree = TRUE))
 predictions_day <- TFBoost.predict(model_TFBoost_separate, newx = xtest, newz = ztest)
 ```
 
