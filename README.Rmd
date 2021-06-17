@@ -25,12 +25,16 @@ library(TFBoost)
 ## An example: German electricity data
 Below we illustrate the use of the package with the German electricity dataset. The original data is provided in the on-line supplementary materials of [Liebl (2013)](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-7/issue-3/Modeling-and-forecasting-electricity-spot-prices--A-functional-data/10.1214/13-AOAS652.full).The data consist of electricity spot prices traded at the European Energy Exchange (EEX) in Leipzig and electricity demand reported by European Network of Transmission System Operators for Electricity from January 1st 2006 to  September 30th 2008.  We excluded weekends and holidays from the data and ended up with data collected on 638 days and provided it in the package as `GED`. We treated hourly evaluated electricity spot prices (`GED$price`) as the predictor,  represented as a vector of dimension 24 for each day, and the daily average of electricity demand (`GED$demand`) as the response.  
 
-We load the data, plot the first 10 predictor curves, and the demand in 638 days. 
+We plot the data, highlighting 10 randomly chosen predictor curves in red. We
+also plot the average daily demand.  
 
-```{r plot}
+```{r plot, fig.show="hold", out.width="45%"}
 data(GED)
-matplot(t(GED$price[1:10,]), lty = 1, type = "l", ylab = "price", xlab = "hour", 
-        main = "hourly electricity price (10 days)")
+matplot(t(GED$price), lty = 1, type = "l", ylab = "price", xlab = "hour", 
+        main = "hourly electricity price (10 days)", col='gray70', ylim=c(0, 1000))
+set.seed(123)
+n <- nrow(GED$price)
+matplot(t(GED$price[sample(n, 10), ]), type='l', col='red', add=TRUE, lty=1)
 plot(GED$date,GED$demand, type = "l", ylab = "demand", xlab = "date", 
      main = "average daily electricity demand")
 ```

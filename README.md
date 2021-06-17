@@ -37,23 +37,21 @@ prices (`GED$price`) as the predictor, represented as a vector of
 dimension 24 for each day, and the daily average of electricity demand
 (`GED$demand`) as the response.
 
-We load the data, plot the first 10 predictor curves, and the demand in
-638 days.
+We plot the data, highlighting 10 randomly chosen predictor curves in
+red. We also plot the average daily demand.
 
 ``` r
 data(GED)
-matplot(t(GED$price[1:10,]), lty = 1, type = "l", ylab = "price", xlab = "hour", 
-        main = "hourly electricity price (10 days)")
-```
-
-![](README_files/figure-gfm/plot-1.png)<!-- -->
-
-``` r
+matplot(t(GED$price), lty = 1, type = "l", ylab = "price", xlab = "hour", 
+        main = "hourly electricity price (10 days)", col='gray70', ylim=c(0, 1000))
+set.seed(123)
+n <- nrow(GED$price)
+matplot(t(GED$price[sample(n, 10), ]), type='l', col='red', add=TRUE, lty=1)
 plot(GED$date,GED$demand, type = "l", ylab = "demand", xlab = "date", 
      main = "average daily electricity demand")
 ```
 
-![](README_files/figure-gfm/plot-2.png)<!-- -->
+<img src="README_files/figure-gfm/plot-1.png" width="45%" /><img src="README_files/figure-gfm/plot-2.png" width="45%" />
 
 In order to train our predictor, we split the data set into a `training`
 set (with 60% of the available data), a `validation` set and a `test`
