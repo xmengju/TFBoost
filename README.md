@@ -12,7 +12,7 @@ a multi-index regression model introduced in (add reference)…
 You can install the development version of the package in R using:
 
 ``` r
-devtools::install_github("xmengju/TFBoost", auth_token = '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')
+devtools::install_github("xmengju/TFBoost")
 ```
 
 Once installed you can load the package with:
